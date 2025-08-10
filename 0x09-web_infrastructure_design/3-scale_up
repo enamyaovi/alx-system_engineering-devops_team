@@ -1,0 +1,37 @@
+# Five-Server Web Infrastructure for [www.foobar.com](http://www.foobar.com) (Secured, Encrypted, and Monitored)
+
+## How It Works
+
+When a user visits **[www.foobar.com](http://www.foobar.com)**, the domain name resolves to the public IP of a **clustered HAProxy load balancer** setup. This cluster consists of two HAProxy servers configured in **Active-Passive** mode with a virtual IP (VIP), so if one fails, the other takes over seamlessly. Incoming requests pass through a firewall that only allows secure HTTPS traffic on port 443.
+
+The **primary load balancer** terminates SSL (decrypts the HTTPS traffic), checks the health of backend servers, and forwards the requests to a **dedicated Nginx web server**. The web server serves static files (like images and stylesheets) directly, or forwards dynamic requests to a **dedicated application server**, which processes business logic and interacts with the **MySQL database**.
+
+To protect the system, three firewalls are placed strategically:
+
+* Between the Internet and the load balancer cluster (allowing only ports 80 and 443),
+* Between the web server and application server (allowing only HTTP/HTTPS traffic), and
+* Between the application server and database (allowing only the database port 3306).
+
+All five servers run monitoring clients that collect system metrics and logs, sending this data to a centralized monitoring service like Sumo Logic or Datadog.
+
+## Components and Why They’re Added
+
+* **HAProxy Cluster (2 Load Balancers):** Provides redundancy and prevents downtime by having a standby load balancer ready to take over if the active one fails.
+* **Dedicated Nginx Web Server:** Focuses on serving static content quickly and efficiently, reducing the load on the application server.
+* **Dedicated Application Server:** Handles the website’s business logic separately, improving security and allowing better performance tuning.
+* **MySQL Database (Primary-Replica):** Separates write and read operations to improve performance and reliability.
+* **3 Firewalls:** Segment network traffic and control access between different tiers for improved security.
+* **SSL Certificate on Load Balancer:** Ensures that traffic between users and the load balancer is encrypted, protecting sensitive data.
+* **Monitoring Clients:** Collect data from each server to track performance, detect issues early, and enable quick responses to problems.
+
+## Why This Matters
+
+Splitting the web, application, and database servers onto different machines helps isolate failures and makes scaling easier. The clustered load balancers prevent a single point of failure at the front door of the system. Firewalls limit exposure and protect sensitive parts of the infrastructure. Monitoring helps maintain system health and security by providing real-time insights.
+
+## Summary
+
+This setup creates a reliable, scalable, and secure environment for hosting **[www.foobar.com](http://www.foobar.com)**. Each component serves a focused purpose, allowing easy maintenance and future growth.
+
+
+## Web Architecture Diagram
+### ![image](/images/scale_up.jpg)

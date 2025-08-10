@@ -1,0 +1,41 @@
+```mermaid
+    flowchart TB
+        %% Frontend
+        A[User Browser] -->|"Enter www\.foobar.com"| B[DNS Server]
+        B -->|"A record: www → Load Balancer IP"| C[HAProxy Load Balancer]
+    
+        %% Backend Server 1
+        subgraph S1["Server 1"]
+            direction TB
+            W1[Nginx Web Server]
+            A1[Application Server]
+            Code1["Application Files (Code Base)"]
+            DB1["MySQL Database (Master)"]
+            W1 -->|"Forward Dynamic Request"| A1
+            A1 -->|"Access Code Base"| Code1
+            A1 -->|"Query / Update Data"| DB1
+        end
+    
+        %% Backend Server 2
+        subgraph S2["Server 2"]
+            direction TB
+            W2[Nginx Web Server]
+            A2[Application Server]
+            Code2["Application Files (Code Base)"]
+            DB2["MySQL Database (Replica)"]
+            W2 -->|"Forward Dynamic Request"| A2
+            A2 -->|"Access Code Base"| Code2
+            A2 -->|"Query Only"| DB2
+        end
+    
+        %% Load Balancer Connections
+        C -->|"Forward HTTP/HTTPS Request (Least Connections)"| W1
+        C -->|"Forward HTTP/HTTPS Request (Least Connections)"| W2
+    
+        %% DB Replication
+        DB1 -->|"Replicate Data"| DB2
+    
+        %% Response Flow
+        W1 -->|"Serve Static or Dynamic Content"| A
+        W2 -->|"Serve Static or Dynamic Content"| A
+```

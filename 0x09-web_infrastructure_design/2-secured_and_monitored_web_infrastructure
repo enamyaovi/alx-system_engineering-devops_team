@@ -1,0 +1,44 @@
+# Three-Server Web Infrastructure for [www.foobar.com](http://www.foobar.com) (Secured, Encrypted, and Monitored)
+
+## How It Works
+
+When a user visits [www.foobar.com](http://www.foobar.com), the DNS resolves the domain to the public IP address of the HAProxy load balancer. The request first passes through a firewall at the network edge, which only allows HTTPS requests on port 443. The load balancer terminates SSL, checks server health, and forwards the request to the Nginx web server. Nginx either serves static files directly or forwards dynamic requests to the application server, which processes the logic and queries the MySQL database. A second firewall ensures only the web/app tier can communicate with the application server, and a third firewall protects the database tier so that only the app server can connect on port 3306. All servers run a monitoring client that collects metrics and logs for analysis in a central monitoring system like Sumo Logic or Datadog.
+
+## Components and Why They’re Added
+
+**HAProxy (Load Balancer)**: Distributes traffic between backend servers using the Least Connections algorithm to avoid overloading any single server.
+
+**Nginx (Web Server)**: Serves static files quickly and proxies dynamic requests to the application server.
+
+**Application Server**: Runs business logic and handles database queries.
+
+**MySQL Database (Primary-Replica)**: The primary node handles writes; the replica handles read queries, improving performance and availability.
+
+**3 Firewalls**: Between Internet and Load Balancer – Only allows ports 80/443. Between Load Balancer and Web/App Tier – Restricts access to HTTP/HTTPS traffic. Between App Server and Database – Allows only database port (3306) traffic.
+
+**SSL Certificate on Load Balancer**: Encrypts traffic between the client and the load balancer to prevent interception.
+
+**3 Monitoring Clients**: Installed on the load balancer, web/app server, and database to track CPU usage, memory, request rate (QPS), and errors.
+
+## Why These Security & Monitoring Features Matter
+
+Firewalls reduce the attack surface by enforcing strict access control between network tiers, preventing unauthorized connections. HTTPS with SSL encrypts client-to-server traffic, ensuring that sensitive data like passwords cannot be intercepted or tampered with. Monitoring allows early detection of failures, performance bottlenecks, and potential security breaches. Agents collect data from logs, system metrics, and application performance counters, sending them to a central dashboard for real-time analysis and alerts.
+
+### Example: Monitoring QPS on the Web Server
+
+Enable access logging in Nginx. Configure the monitoring agent to read logs in near real time. The agent counts HTTP requests per second and sends the data to the monitoring dashboard. Use this data to detect sudden traffic spikes, potential attacks, or degraded performance.
+
+## Active-Active vs Active-Passive Load Balancing
+
+**Active-Active**: Multiple load balancers share traffic simultaneously. **Active-Passive**: One load balancer is active while the other is on standby; failover occurs if the active one fails. In this setup, Active-Passive is chosen for simpler reliability without introducing too much complexity.
+
+## Weak Points and Risks
+
+**SSL Termination at the Load Balancer**: Traffic between the load balancer and backend is unencrypted, making it vulnerable if the internal network is compromised. *Mitigation*: Use HTTPS between the load balancer and backend servers.
+
+**Single MySQL Write Node**: If the primary database fails, no writes are possible. *Mitigation*: Promote the replica to primary or use a multi-primary setup.
+
+**Servers Running All Components**: If a single server runs the web, application, and database layers, a compromise or failure can impact multiple critical functions. *Mitigation*: Use dedicated roles for each tier to isolate failures.
+
+## Web Architecture Diagram
+### ![image](/images/2_secure_color.jpg)

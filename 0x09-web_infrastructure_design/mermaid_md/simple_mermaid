@@ -1,0 +1,21 @@
+```mermaid
+flowchart TB
+    A[User Browser] -->|Enter www\.foobar.com| B[DNS Server]
+    B -->|A record: www → 8.8.8.8| C[Server Public IP 8.8.8.8]
+
+    subgraph E[One Server: 8.8.8.8]
+        direction TB
+        E1[Nginx Web Server]
+        E2[Application Server]
+        E3[Application Files - Code Base]
+        E4[MySQL Database]
+    end
+
+    C -->|HTTP/HTTPS Request| E1
+    E1 -->|Serve Static Files| A
+    E1 -->|Forward Dynamic Request| E2
+    E2 -->|Access Code Base| E3
+    E2 -->|Query Database| E4
+    E2 -->|Send HTML Response| E1
+    E1 -->|Return Response over TCP/IP & HTTPS| A
+```

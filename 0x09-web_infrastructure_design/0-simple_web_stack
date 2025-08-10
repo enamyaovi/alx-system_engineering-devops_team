@@ -1,0 +1,46 @@
+## One-Server Web Infrastructure Design
+
+### Scenario Overview
+
+When a user wants to visit **[www.foobar.com](http://www.foobar.com)**, they type the address into their browser. The browser first queries the **DNS** to resolve the IP address associated with the domain. In this case, the DNS has an **A record** for `www` that points to the server's public IP address **8.8.8.8**.
+
+Once the IP address is retrieved, the browser sends an **HTTP** or **HTTPS** request to the server.
+
+### Request Flow
+
+1. **User request:** The user enters `www.foobar.com` into their browser.
+2. **DNS resolution:** The DNS resolves `www` to **8.8.8.8** using an **A record**.
+3. **Connection:** The browser sends the request over the internet to the server's IP.
+4. **Firewall check:** The request passes through a firewall that allows only HTTP/HTTPS traffic.
+5. **Web server handling:** **Nginx** receives the request. If it’s a static resource (e.g., CSS, images, JS), Nginx sends it directly to the client.
+6. **Dynamic request handling:** If the request needs dynamic content, Nginx passes it to the **application server**.
+7. **Application processing:** The application server executes the application code from the code base, potentially querying **MySQL** for data.
+8. **Response generation:** The application server sends the generated HTML back to Nginx.
+9. **Response delivery:** Nginx returns the response to the browser over **TCP/IP** and HTTPS.
+10. **Rendering:** The browser renders the page for the user.
+
+### Infrastructure Components and Roles
+
+* **Server:** A physical or virtual machine that stores, processes, and delivers web content.
+* **Domain name:** A human-readable address (foobar.com) that maps to the server's IP.
+* **DNS record for `www`:** An **A record** mapping `www.foobar.com` to `8.8.8.8`.
+* **Web server (Nginx):** Handles incoming HTTP/HTTPS requests, serves static files, and proxies dynamic requests to the application server.
+* **Application server:** Executes the site’s application logic and generates dynamic content.
+* **Application files (code base):** The source code, templates, and assets that power the site.
+* **Database (MySQL):** Stores and retrieves structured application data.
+* **Communication protocol:** TCP/IP over HTTP or HTTPS between the server and the user's browser.
+
+### Limitations of This Design
+
+1. **Single Point of Failure (SPOF):** If the server fails, the website becomes unreachable.
+2. **Maintenance downtime:** Deployments or server restarts cause temporary outages.
+3. **Scalability limits:** A single server cannot handle high traffic efficiently.
+
+### Security and Reliability Measures
+
+* **SSL/TLS:** Enables secure HTTPS connections.
+* **Firewall rules:** Restrict access to necessary ports only.
+* **Backups:** Regularly back up database and application files to allow recovery in case of failure.
+
+## Web Architecture Diagram
+## ![image](/images/0_simple_webstack.jpg)

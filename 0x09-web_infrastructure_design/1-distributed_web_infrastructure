@@ -1,0 +1,62 @@
+## Three-Server Web Infrastructure for [www.foobar.com](http://www.foobar.com)
+
+### How It Works
+
+When someone visits **[www.foobar.com](http://www.foobar.com)**, the request first goes to the **DNS** (Domain Name System), which finds the public IP address of our **HAProxy load balancer**. The browser then sends an HTTP or HTTPS request to that IP.
+
+The **load balancer** accepts the traffic, checks which backend servers are healthy, and forwards the request to them. In this setup, there are three main servers:
+
+* **HAProxy** – Handles incoming traffic.
+* **Nginx Web Server** – Serves static files (images, CSS, JavaScript) and sends dynamic requests to the app server.
+* **Application Server** – Runs the website’s logic and connects to the database.
+
+The app server communicates with a **MySQL database**, which has one primary server for writes and at least one replica for reads. This helps spread the workload and makes it easier to add features later without major changes.
+
+### Why Each Part Is There
+
+* **HAProxy (Load Balancer):** Spreads requests between servers, checks server health, and can handle HTTPS.
+* **Nginx (Web Server):** Delivers static files quickly and sends dynamic work to the app server.
+* **Application Server:** Runs the website’s main logic.
+* **Application Files:** The site’s source code.
+* **MySQL Database:** Stores all data. The replica helps balance read traffic and serves as a backup.
+
+### How the Load Balancer Chooses Servers
+
+Load balancers can use different methods to decide where to send each request. Common ones are round robin (send to each server in turn), least connections (send to the server with the fewest current requests), or source hashing (always send the same user to the same server).
+
+In our case, least connections is a good choice. It works well if some requests take longer than others, because it avoids sending too many slow requests to the same server. The load balancer keeps track of active connections and always picks the server with the fewest.
+
+### Active-Active vs Active-Passive
+
+Active-Active: Two or more load balancers are running at the same time and share traffic. This gives more total capacity and avoids wasting hardware, but it’s more complex to set up.
+
+Active-Passive: One load balancer handles all traffic, while another is on standby. If the active one fails, the standby takes over. This is simpler but the standby server is idle most of the time.
+
+For this setup, starting with Active-Passive is simpler, using a tool like keepalived to switch quickly if one fails.
+
+### How Primary-Replica Databases Work
+
+The primary database handles all writes (adding, changing, or deleting data). It keeps a log of these changes (called the binlog). The replica database connects to the primary, reads its log, and applies those changes so it has an up-to-date copy. Replication can be immediate or slightly delayed depending on configuration.
+
+Applications normally write to the primary and read from the replica to reduce load. If the primary fails, you can promote the replica to take its place. One thing to watch for is replication lag, sometimes the replica may be slightly behind, so a read right after a write might not show the latest data if it’s coming from the replica.
+
+### Weak Points (SPOFs)
+
+A single HAProxy load balancer is a major risk. If it goes down, no traffic reaches the backend servers. This can make the entire website inaccessible, even if the other servers are healthy.
+
+A single Nginx web server means static files won’t load if it fails. While dynamic content might still process through the application server, users would face broken layouts, missing images, and incomplete pages.
+
+A single application server creates a bottleneck for dynamic requests. If it fails, any part of the site that requires logic or database access will stop functioning.
+
+A single primary database is especially risky. If it fails, no new data can be written, and depending on the setup, even reading data could become inconsistent.
+
+### Security Risks
+
+The system currently has no firewall rules in place, leaving it open to unauthorized access. It also lacks HTTPS, meaning data can be transmitted without encryption, which increases vulnerability to interception. Additionally, the database is exposed directly to the internet, making it an easy target for attackers. There is also no protection against Distributed Denial-of-Service (DDoS) attacks, which could overwhelm and disable the system.
+
+### Operational Risks
+
+There is no monitoring in place to track the system’s performance or detect issues early. Backups are also missing, which means any data loss would be permanent. Furthermore, there is no defined deployment process, increasing the chances of errors when updating or releasing new features.
+
+## Web Architecture Diagram
+### ![image](/images/1_distributed.jpg)

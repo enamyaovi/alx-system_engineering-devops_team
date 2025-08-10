@@ -1,0 +1,72 @@
+```mermaid
+flowchart LR
+    %% User & DNS
+    U["**User Browser**"] -->|"https\://www\.foobar.com"| DNS["**DNS Server**"]
+    DNS -->|"A record → LoadBalance IP"| FW1["**Firewall 1**\n(Edge: allow HTTPS 443 only)"]
+
+    %% Load Balancer
+    FW1 --> LB["**HAProxy Load Balancer**\nSSL Termination\n1 SSL certificate\nHealth Checks\nActive-Active\nLeastConn"]
+    LB --> FW2["**Firewall 2**\n(Restrict to Backend Servers Only)"]
+
+    %% Backend Servers
+    subgraph S1["Server 1"]
+        direction TB
+        W1[Nginx Web Server]
+        A1[Application Server]
+        D1[MySQL Database - Primary]
+        Mon1["**Monitoring Client** - DataDog"]
+        W1 --> A1
+        A1 --> D1
+    end
+
+    subgraph S2["Server 2"]
+        direction TB
+        W2[Nginx Web Server]
+        A2[Application Server]
+        D2[MySQL Database - Replica]
+        Mon2["**Monitoring Client** - DataDog"]
+        W2 --> A2
+        A2 --> D2
+    end
+
+    subgraph S3["Server 3"]
+        direction TB
+        W3[Nginx Web Server]
+        A3[Application Server]
+        D3[MySQL Database - Replica]
+        Mon3["**Monitoring Client** - DataDog"]
+        W3 --> A3
+        A3 --> D3
+    end
+
+    %% LB to Servers
+    FW2 -->|HTTPS Traffic| W1
+    FW2 -->|HTTPS Traffic| W2
+    FW2 -->|HTTPS Traffic| W3
+
+    %% Database Firewall in middle
+    D1 --> FW3["**Firewall 3**\n(Allow MySQL Replication 3306 Only)"]
+    FW3 --> D2
+    FW3 --> D3
+
+    %% DB Replication (from primary through FW3)
+    D1 -->|Replicates| D2
+    D1 -->|Replicates| D3
+    
+    %% Response Path
+    W1 ==> U
+    W2 ==> U
+    W3 ==> U
+
+    %% Monitoring - arrows routed down and across
+    Mon1 -.->|Monitoring Data| MON[Central Monitoring System]
+    Mon2 -.->|Monitoring Data| MON
+    Mon3 -.->|Monitoring Data| MON
+
+    %% Force monitoring system to be visually far below
+    MON --- MON_HIDDEN
+    classDef hidden stroke-width:0px,fill:none;
+    class MON_HIDDEN hidden;
+
+
+```

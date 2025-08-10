@@ -1,0 +1,53 @@
+```mermaid
+---
+config:
+  layout: fixed
+---
+flowchart TD
+ subgraph LB_CLUSTER["**Server Group: Load Balancer Cluster**"]
+    direction TB
+        VIP["Virtual IP (VIP)"]
+        LB1["**HAProxy 1 (Active)**
+            SSL Termination
+            Health Checks"]
+        LB2["**HAProxy 2 (Passive)**
+        Hot Standby"]
+  end
+ subgraph WEB_SRV["**Server: Web Server**"]
+        WEB["Nginx Web Server
+        Serves Static Files"]
+  end
+ subgraph APP_SRV["Server: Application Server"]
+        APP["Application Server
+        Business Logic"]
+  end
+ subgraph DB_SRV["Server: Database Server"]
+        DB["MySQL Database Server
+        Primary"]
+  end
+    U["**User Browser**"] -- "https\://www\.foobar.com" --> DNS["**DNS Server**"]
+    DNS -- A record → VIP --> FW1["**Firewall 1**
+    (Allow HTTPS 443 only)"]
+    VIP --> LB1
+    VIP -.-> LB2
+    FW1 --> VIP
+    FW2["**Firewall 2**
+    (Allow Web Server Only)"] --> WEB
+    LB1 --> FW2 & MON["Central Monitoring System"]
+    WEB --> FW3["Firewall 3
+    (Allow App Server Only)"] & MON
+    FW3 --> APP
+    APP --> FW4["Firewall 4
+    (Allow MySQL 3306 Only)"] & MON
+    FW4 --> DB
+    DB -.-> FW4
+    FW4 -.-> APP
+    APP -.-> FW3
+    FW3 -.-> WEB
+    WEB -.-> FW2
+    FW2 -.-> LB1
+    LB1 -.-> FW1
+    FW1 -.-> U
+    LB2 --> MON
+    DB --> MON
+```
